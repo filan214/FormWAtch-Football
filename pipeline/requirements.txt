@@ -1,0 +1,9 @@
+soccerdata==1.8.*
+pandas>=2.0
+scipy>=1.11
+ruptures>=1.1
+scikit-learn>=1.4
+supabase>=2.4
+httpx
+python-dotenv
+pytest
