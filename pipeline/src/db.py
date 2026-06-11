@@ -96,3 +96,20 @@ def log_pipeline_run(
         ).execute()
     except Exception as e:  # noqa: BLE001 - re-raise with table context
         raise RuntimeError(f"DB write failed: pipeline_runs — {e}") from e
+
+
+def get_last_pipeline_run() -> dict | None:
+    """
+    Returns the most recent pipeline_run row as a dict, or None if the
+    table is empty. Used by the Next.js app's status footer.
+    Fields returned: started_at, finished_at, status, matchweek,
+    rows_written, anomalies_created.
+    """
+    result = (
+        sb.table("pipeline_runs")
+        .select("started_at,finished_at,status,matchweek,rows_written,anomalies_created")
+        .order("started_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    return result.data[0] if result.data else None
