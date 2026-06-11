@@ -19,12 +19,12 @@ BATCH_SIZE = 500
 
 
 def upsert_players(rows: list[dict]) -> int:
-    """Upsert player rows on conflict of ``fbref_id``; return rows written."""
+    """Upsert player rows on conflict of ``understat_id``; return rows written."""
     written = 0
     try:
         for i in range(0, len(rows), BATCH_SIZE):
             chunk = rows[i : i + BATCH_SIZE]
-            sb.table("players").upsert(chunk, on_conflict="fbref_id").execute()
+            sb.table("players").upsert(chunk, on_conflict="understat_id").execute()
             written += len(chunk)
     except Exception as e:  # noqa: BLE001 - re-raise with table context
         raise RuntimeError(f"DB write failed: players — {e}") from e
@@ -32,12 +32,12 @@ def upsert_players(rows: list[dict]) -> int:
 
 
 def upsert_matches(rows: list[dict]) -> int:
-    """Upsert match rows on conflict of ``fbref_id``; return rows written."""
+    """Upsert match rows on conflict of ``understat_id``; return rows written."""
     written = 0
     try:
         for i in range(0, len(rows), BATCH_SIZE):
             chunk = rows[i : i + BATCH_SIZE]
-            sb.table("matches").upsert(chunk, on_conflict="fbref_id").execute()
+            sb.table("matches").upsert(chunk, on_conflict="understat_id").execute()
             written += len(chunk)
     except Exception as e:  # noqa: BLE001 - re-raise with table context
         raise RuntimeError(f"DB write failed: matches — {e}") from e

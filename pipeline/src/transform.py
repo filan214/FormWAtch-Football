@@ -15,16 +15,17 @@ logger = logging.getLogger(__name__)
 # Appearances shorter than this are garbage-time noise (PRD §4.3).
 QUALIFYING_MINUTES = 30
 
-# Attacking/volume metrics expressed per-90.
+# Attacking/volume metrics expressed per-90. xg_chain/xg_buildup (involvement
+# in possessions ending in a shot) stand in for the progressive-volume signal
+# lost when FBref dropped Opta stats in January 2026.
 PER90_METRICS = [
     "goals",
     "shots",
     "xg",
     "xa",
     "key_passes",
-    "progressive_passes",
-    "progressive_carries",
-    "touches_att_box",
+    "xg_chain",
+    "xg_buildup",
 ]
 
 

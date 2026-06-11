@@ -1,4 +1,4 @@
-soccerdata==1.8.*
+soccerdata==1.9.*
 pandas>=2.0
 scipy>=1.11
 ruptures>=1.1

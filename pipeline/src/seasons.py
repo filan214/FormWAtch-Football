@@ -3,9 +3,9 @@
 Three pieces keep the pipeline running across seasons unattended:
 dynamic season detection (never hardcode a season string), baseline
 carry-forward (last season's posterior becomes this season's prior),
-and the pre-season squad refresh (sync ``players.team`` from FBref).
+and the pre-season squad refresh (sync ``players.team`` from Understat).
 
-The pure date functions here are unit-tested; the DB- and FBref-touching
+The pure date functions here are unit-tested; the DB- and Understat-touching
 functions import their dependencies lazily so this module stays importable
 without Supabase credentials or a network connection.
 """
@@ -102,7 +102,7 @@ def seed_new_season_priors(player_ids: list[int], metrics: list[str]) -> int:
 
 
 def refresh_squads() -> int:
-    """Sync current EPL rosters from FBref into ``players.team`` (PRD §9.3).
+    """Sync current EPL rosters from Understat into ``players.team`` (PRD §9.3).
 
     Run pre-season (late July) so team labels and opponent-adjustment context
     don't go stale. January transfers need no special handling — the weekly
@@ -119,34 +119,29 @@ def refresh_squads() -> int:
 
     season = current_season()
     try:
-        fbref = sd.FBref(leagues=LEAGUE, seasons=[season])
+        understat = sd.Understat(leagues=LEAGUE, seasons=[season])
     except Exception as e:  # noqa: BLE001 - surface any connection failure clearly
-        raise RuntimeError(f"FBref unavailable: {e}") from e
+        raise RuntimeError(f"Understat unavailable: {e}") from e
 
-    df = fbref.read_player_season_stats(stat_type="standard").reset_index()
-    df.columns = [
-        "_".join(str(c) for c in col).strip("_") if isinstance(col, tuple) else str(col)
-        for col in df.columns
-    ]
+    df = understat.read_player_season_stats().reset_index()
 
     cols = {str(c).lower(): c for c in df.columns}
-    id_col = next((cols[c] for c in ("player_id", "id") if c in cols), None)
-    name_col = cols.get("player")
-    team_col = cols.get("team")
-    if id_col is None or name_col is None or team_col is None:
+    missing = [c for c in ("player_id", "player", "team") if c not in cols]
+    if missing:
         raise RuntimeError(
-            "Could not locate player id/name/team columns in FBref roster "
+            f"Could not locate {missing} columns in Understat roster "
             f"data; available columns: {sorted(cols)}"
         )
 
-    roster = df[df[id_col].notna() & df[name_col].notna()]
+    roster = df[df["player_id"].notna() & df["player"].notna()]
     # A player who moved clubs appears once per team; keep the last row.
-    roster = roster.drop_duplicates(subset=[id_col], keep="last")
+    roster = roster.drop_duplicates(subset=["player_id"], keep="last")
     rows = [
         {
-            "fbref_id": str(r[id_col]),
-            "name": str(r[name_col]),
-            "team": None if pd.isna(r[team_col]) else str(r[team_col]),
+            "understat_id": str(r["player_id"]),
+            "name": str(r["player"]),
+            "team": None if pd.isna(r["team"]) else str(r["team"]),
+            "position": None if pd.isna(r.get("position")) else str(r["position"]),
         }
         for _, r in roster.iterrows()
     ]
@@ -154,7 +149,7 @@ def refresh_squads() -> int:
     for i in range(0, len(rows), BATCH_SIZE):
         try:
             sb.table("players").upsert(
-                rows[i : i + BATCH_SIZE], on_conflict="fbref_id"
+                rows[i : i + BATCH_SIZE], on_conflict="understat_id"
             ).execute()
         except Exception as e:  # noqa: BLE001 - re-raise with table context
             raise RuntimeError(f"DB write failed: players — {e}") from e
