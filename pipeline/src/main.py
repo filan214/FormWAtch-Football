@@ -1,13 +1,15 @@
-"""Weekly pipeline orchestrator (Phase 1).
+"""Weekly pipeline orchestrator.
 
 Ingest Understat stats for the current + previous season, apply transform
 rules, upsert players/matches/stats into Supabase, seed any missing
-current-season baseline priors, and record the run in ``pipeline_runs``.
+current-season baseline priors, run anomaly detection (Phase 2 engine via
+``detect``), generate cached AI insights for severity >= 60 (``narrative``),
+and record the run in ``pipeline_runs``.
 
-Detection is Phase 2 — anomalies are always 0 here. Scraped column names
-come from Understat via soccerdata and may drift between library versions,
-so all column lookups go through candidate lists that fail loudly with the
-list of available columns rather than silently writing wrong data.
+Scraped column names come from Understat via soccerdata and may drift
+between library versions, so all column lookups go through candidate lists
+that fail loudly with the list of available columns rather than silently
+writing wrong data.
 """
 
 import logging
@@ -18,7 +20,9 @@ import pandas as pd
 from dotenv import load_dotenv
 
 from . import db
+from .detect import run_detection
 from .ingest import fetch_epl_stats
+from .narrative import sync_insights
 from .seasons import current_season, seasons_to_fetch, seed_new_season_priors
 from .transform import (
     PER90_METRICS,
@@ -367,11 +371,21 @@ def main() -> None:
         rows_written += _seed_missing_baselines(player_db_ids, season)
 
         matchweek = _latest_matchweek(sched, season)
+
+        detection = run_detection()
+        anomalies_created = detection["created"]
+        insights = sync_insights()
+
         finished = datetime.now(timezone.utc).isoformat()
-        db.log_pipeline_run(started, finished, "success", matchweek, rows_written, 0)
+        db.log_pipeline_run(
+            started, finished, "success", matchweek, rows_written, anomalies_created
+        )
         print(
             f"Pipeline complete. Rows written: {rows_written}. "
-            "Anomalies: 0 (detection not yet implemented)."
+            f"Anomalies: {detection['created']} new, {detection['updated']} updated, "
+            f"{detection['resolved']} resolved ({detection['active']} active). "
+            f"Insights: {insights['generated']} generated, "
+            f"{insights['skipped']} cached, {insights['failed']} failed."
         )
     except Exception:
         finished = datetime.now(timezone.utc).isoformat()
