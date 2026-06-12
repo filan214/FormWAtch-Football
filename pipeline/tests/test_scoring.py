@@ -6,10 +6,13 @@ import pytest
 
 from src.detectors.multivariate import FEATURES
 from src.scoring import (
+    FDR_Q,
+    apply_fdr,
     broad_uplift,
     classify,
     overperf_vs_xg,
     role_change,
+    severity,
     workload_spike,
 )
 
@@ -200,5 +203,67 @@ def test_breakout_is_last_resort() -> None:
     assert classify(_typing_results(), uplift=True) == "BREAKOUT"
 
 
+def test_breakout_scoring_surge_route() -> None:
+    # goals and xg both flagged up: a striker's surge, no breadth needed
+    bayes = _typing_results(goals_flag=True, goals_dir="up", xg_flag=True, xg_dir="up")
+    assert classify(bayes) == "BREAKOUT"
+
+
+def test_goals_up_alone_is_not_a_breakout() -> None:
+    assert classify(_typing_results(goals_flag=True, goals_dir="up")) is None
+
+
 def test_nothing_fires_returns_none() -> None:
     assert classify(_typing_results()) is None
+
+
+# --- apply_fdr ---------------------------------------------------------------
+
+def test_fdr_matches_hand_computed_bh() -> None:
+    # sorted: .005, .01, .03, .04 -> n*p/rank = .02, .02, .04, .04 (monotone)
+    adjusted, rejected = apply_fdr([0.01, 0.04, 0.03, 0.005])
+    assert adjusted == pytest.approx([0.02, 0.04, 0.04, 0.02])
+    assert rejected.all()
+
+
+def test_fdr_real_signal_survives_junk() -> None:
+    p = [1e-6] + list(np.linspace(0.2, 0.99, 20))
+    adjusted, rejected = apply_fdr(p)
+    assert rejected[0]
+    assert not rejected[1:].any()
+    assert (adjusted >= np.asarray(p)).all()   # BH never shrinks a p-value
+
+
+def test_fdr_tighter_q_rejects_fewer() -> None:
+    p = [0.001, 0.02, 0.04, 0.5]
+    _, at_10 = apply_fdr(p, q=0.10)
+    _, at_1 = apply_fdr(p, q=0.01)
+    assert at_1.sum() < at_10.sum()
+    assert at_1[0]   # the strongest signal survives even at q=0.01
+
+
+def test_fdr_empty_week() -> None:
+    adjusted, rejected = apply_fdr([])
+    assert len(adjusted) == 0
+    assert len(rejected) == 0
+
+
+# --- severity ----------------------------------------------------------------
+
+def test_severity_saturates_at_100() -> None:
+    assert severity(kl=3.0, persistence_weeks=3, fdr_p=0.0) == 100
+    assert severity(kl=50.0, persistence_weeks=10, fdr_p=0.0) == 100
+
+
+def test_severity_floor_is_zero() -> None:
+    assert severity(kl=0.0, persistence_weeks=0, fdr_p=FDR_Q) == 0
+
+
+def test_severity_component_weights() -> None:
+    assert severity(1.5, 0, FDR_Q) == 20        # half of the 40-point KL term
+    assert severity(0, 1.5, FDR_Q) == 15        # half of the 30-point persistence term
+    assert severity(0, 0, FDR_Q / 2) == 15      # half of the 30-point significance term
+
+
+def test_severity_is_int() -> None:
+    assert isinstance(severity(1.0, 1, 0.05), int)

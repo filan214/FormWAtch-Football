@@ -38,11 +38,15 @@ def composite_index(df_player):
     return z.mean(axis=1).to_numpy()
 
 
-def find_change_points(signal):
+def find_change_points(signal, pen=1.5):
     """Locate regime shifts in a composite signal via PELT (rbf kernel).
 
     Args:
         signal: 1-D array of composite values in match order.
+        pen: PELT penalty; lower finds more (smaller) shifts. Default tuned
+            by the 2024-25 backtest (Step 2.7): pen=5 found essentially no
+            regimes on real composite signals (std ~0.6), while 1.5 finds
+            documented shifts without firing on stationary noise.
 
     Returns:
         List of change-point indices; each index is the first match of a new
@@ -54,5 +58,5 @@ def find_change_points(signal):
     if len(signal) < 2 * MIN_SEGMENT:
         return []
     algo = rpt.Pelt(model="rbf", min_size=MIN_SEGMENT).fit(signal.reshape(-1, 1))
-    bkps = algo.predict(pen=5)   # tune pen via backtest
+    bkps = algo.predict(pen=pen)
     return bkps[:-1]             # last element is series end, drop it

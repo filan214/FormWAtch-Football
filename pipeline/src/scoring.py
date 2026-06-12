@@ -47,6 +47,17 @@ ROLE_WINDOW = 8              # change point must fall in the last N matches
 ROLE_MIN_D = 1.0
 ROLE_SHAPE_METRICS = ("xg_buildup_p90", "xg_chain_p90", "key_passes_p90")
 
+# FDR + severity (Step 2.6); weights sum to 100, caps mark saturation points
+# q tuned by the 2024-25 backtest (Step 2.7): 0.15 keeps slow-burn slumps
+# (Palmer, Vardy) alive through BH without letting weekly volume leave the
+# 5-15 band; 0.10 dropped recall from 9/11 to 8/11 known anomalies.
+FDR_Q = 0.15                  # Benjamini-Hochberg false-discovery rate
+SEV_KL_WEIGHT = 40.0
+SEV_PERSISTENCE_WEIGHT = 30.0
+SEV_FDR_WEIGHT = 30.0
+SEV_KL_CAP = 3.0              # KL at or above this earns the full 40
+SEV_PERSISTENCE_CAP = 3.0     # weeks
+
 # Primary-anomaly precedence, first match wins. WORKLOAD_SPIKE is exempt.
 PRECEDENCE = (
     "ROLE_CHANGE",
@@ -226,6 +237,7 @@ def classify(
     goals_down = goals["flagged"] and goals["direction"] == "down"
     xg_down = xg["flagged"] and xg["direction"] == "down"
     goals_up = goals["flagged"] and goals["direction"] == "up"
+    xg_up = xg["flagged"] and xg["direction"] == "up"
 
     if goals_down and xg_down:
         return "FORM_COLLAPSE"
@@ -233,6 +245,53 @@ def classify(
         return "FINISHING_SLUMP"
     if goals_up and overperforming:
         return "OVERPERFORMANCE_RISK"
-    if uplift:
+    if (goals_up and xg_up) or uplift:
+        # Second BREAKOUT route (added by the 2024-25 backtest): a scoring
+        # surge backed by rising xG is a genuine form improvement even when
+        # the involvement-breadth gate misses it — pure strikers (Isak,
+        # Mateta in 2024-25) surge in goals and xG without moving shots
+        # volume, key passes or buildup enough to clear broad_uplift.
         return "BREAKOUT"
     return None
+
+
+def apply_fdr(p_values, q: float = FDR_Q) -> tuple[np.ndarray, np.ndarray]:
+    """Benjamini-Hochberg correction over one matchweek's candidate anomalies.
+
+    Hundreds of players are tested every week, so raw detector p-values
+    overstate the evidence; BH controls the expected share of false
+    discoveries among the anomalies that get through.
+
+    Args:
+        p_values: Raw p-values, one per candidate anomaly.
+        q: Target false-discovery rate.
+
+    Returns:
+        ``(adjusted, rejected)``: BH-adjusted p-values in input order and the
+        boolean keep-mask ``adjusted <= q``.
+    """
+    p = np.asarray(p_values, dtype=float)
+    if p.size == 0:
+        return p, np.zeros(0, dtype=bool)
+    adjusted = stats.false_discovery_control(p, method="bh")
+    return adjusted, adjusted <= q
+
+
+def severity(kl: float, persistence_weeks: float, fdr_p: float) -> int:
+    """0-100 severity: evidence strength + persistence + significance.
+
+    Three capped components: KL divergence between recent and baseline
+    posteriors (how far form moved), how many consecutive weeks the anomaly
+    has been active, and how far the FDR-adjusted p sits below ``FDR_Q``.
+
+    Args:
+        kl: KL divergence from the Bayesian detector.
+        persistence_weeks: Consecutive weeks this anomaly has been active.
+        fdr_p: BH-adjusted p-value from ``apply_fdr``.
+    """
+    s = (
+        SEV_KL_WEIGHT * min(kl / SEV_KL_CAP, 1)
+        + SEV_PERSISTENCE_WEIGHT * min(persistence_weeks / SEV_PERSISTENCE_CAP, 1)
+        + SEV_FDR_WEIGHT * (1 - min(fdr_p / FDR_Q, 1))
+    )
+    return int(round(s))
