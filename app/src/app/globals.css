@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-saira);
+  --font-mono: var(--font-spline-mono);
+  --font-display: var(--font-saira-cond);
+  --font-heading: var(--font-saira-cond);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * FormWatch — "floodlit broadsheet": a pitch at night.
+ * Dark-only theme; the .dark block mirrors :root so shadcn variants resolve.
+ */
+:root {
+  --background: #0a0e0b;
+  --foreground: #e9f1ea;
+  --card: #0e130f;
+  --card-foreground: #e9f1ea;
+  --popover: #121813;
+  --popover-foreground: #e9f1ea;
+  --primary: #c6f33f;
+  --primary-foreground: #0a0e0b;
+  --secondary: #151c16;
+  --secondary-foreground: #e9f1ea;
+  --muted: #131a14;
+  --muted-foreground: #8fa297;
+  --accent: #18211a;
+  --accent-foreground: #e9f1ea;
+  --destructive: #f87171;
+  --border: rgb(233 241 234 / 0.09);
+  --input: rgb(233 241 234 / 0.13);
+  --ring: rgb(198 243 63 / 0.55);
+  --chart-1: #c6f33f;
+  --chart-2: #7dd3fc;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #8fa297;
+  --radius: 0.375rem;
+  --sidebar: #0e130f;
+  --sidebar-foreground: #e9f1ea;
+  --sidebar-primary: #c6f33f;
+  --sidebar-primary-foreground: #0a0e0b;
+  --sidebar-accent: #18211a;
+  --sidebar-accent-foreground: #e9f1ea;
+  --sidebar-border: rgb(233 241 234 / 0.09);
+  --sidebar-ring: rgb(198 243 63 / 0.55);
+}
+
+.dark {
+  --background: #0a0e0b;
+  --foreground: #e9f1ea;
+  --card: #0e130f;
+  --card-foreground: #e9f1ea;
+  --popover: #121813;
+  --popover-foreground: #e9f1ea;
+  --primary: #c6f33f;
+  --primary-foreground: #0a0e0b;
+  --secondary: #151c16;
+  --secondary-foreground: #e9f1ea;
+  --muted: #131a14;
+  --muted-foreground: #8fa297;
+  --accent: #18211a;
+  --accent-foreground: #e9f1ea;
+  --destructive: #f87171;
+  --border: rgb(233 241 234 / 0.09);
+  --input: rgb(233 241 234 / 0.13);
+  --ring: rgb(198 243 63 / 0.55);
+  --chart-1: #c6f33f;
+  --chart-2: #7dd3fc;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #8fa297;
+  --sidebar: #0e130f;
+  --sidebar-foreground: #e9f1ea;
+  --sidebar-primary: #c6f33f;
+  --sidebar-primary-foreground: #0a0e0b;
+  --sidebar-accent: #18211a;
+  --sidebar-accent-foreground: #e9f1ea;
+  --sidebar-border: rgb(233 241 234 / 0.09);
+  --sidebar-ring: rgb(198 243 63 / 0.55);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(1100px 480px at 50% -120px, rgb(198 243 63 / 0.05), transparent 70%),
+      radial-gradient(900px 600px at 100% 0%, rgb(125 211 252 / 0.025), transparent 65%);
+    background-attachment: fixed;
+  }
+  html {
+    @apply font-sans;
+    scrollbar-color: #2a352c var(--background);
+  }
+  ::selection {
+    background: rgb(198 243 63 / 0.25);
+  }
+}
+
+/* fine photographic grain over everything */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* staggered page-load reveal (set animation-delay inline per row) */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes meter-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.meter-grow {
+  transform-origin: left;
+  animation: meter-grow 0.7s 0.15s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .meter-grow {
+    animation: none;
+  }
+}
+
+/* tabular figures for every data surface */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* uppercase mono microlabel — the kit's connective tissue */
+.microlabel {
+  font-family: var(--font-spline-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+/* long-form methodology prose */
+.prose-fw {
+  max-width: 46rem;
+}
+.prose-fw p {
+  margin-top: 1rem;
+  line-height: 1.75;
+  color: rgb(233 241 234 / 0.86);
+}
+.prose-fw strong {
+  color: var(--foreground);
+}
+.prose-fw code {
+  font-family: var(--font-spline-mono);
+  font-size: 0.85em;
+  background: rgb(233 241 234 / 0.07);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  white-space: nowrap;
+}
