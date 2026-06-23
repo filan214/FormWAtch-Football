@@ -190,6 +190,36 @@ export async function fetchAnomalyDetail(id: number) {
   });
 }
 
+export interface AnomalyCard {
+  playerName: string;
+  team: string | null;
+  position: string | null;
+  anomalyType: AnomalyType;
+  severity: number;
+}
+
+/** Lean fetch for the OG image — name, team, type, severity only. */
+export async function fetchAnomalyCard(id: number): Promise<AnomalyCard | null> {
+  return safe("fetchAnomalyCard", async () => {
+    const db = getDb();
+    if (!db) throw new Error("DATABASE_URL not configured");
+    const [row] = await db
+      .select({
+        playerName: players.name,
+        team: players.team,
+        position: players.position,
+        anomalyType: anomalies.anomalyType,
+        severity: anomalies.severity,
+      })
+      .from(anomalies)
+      .innerJoin(players, eq(anomalies.playerId, players.id))
+      .where(eq(anomalies.id, id))
+      .limit(1);
+    if (!row) return null;
+    return { ...row, severity: row.severity ?? 0 };
+  });
+}
+
 export interface TimelinePoint {
   matchId: number;
   date: string;

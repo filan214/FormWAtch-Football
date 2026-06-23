@@ -23,13 +23,32 @@ const splineMono = Spline_Sans_Mono({
   variable: "--font-spline-mono",
 });
 
+// Absolute base for OG/Twitter image URLs. Vercel injects the production
+// host; falls back to localhost for local dev.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "FormWatch — EPL form anomaly detection",
     template: "%s · FormWatch",
   },
   description:
     "Bayesian surveillance of Premier League player form: breakouts, slumps and role changes separated from noise, explained by AI.",
+  openGraph: {
+    type: "website",
+    siteName: "FormWatch",
+    title: "FormWatch — EPL form anomaly detection",
+    description:
+      "Player form, audited weekly. Gamma-Poisson posteriors nominate the movers, Benjamini-Hochberg keeps the false positives out.",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({
