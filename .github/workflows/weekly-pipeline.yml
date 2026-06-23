@@ -1,7 +1,9 @@
 name: weekly-pipeline
 on:
+  # Runs twice weekly (not just once) to keep a safety margin under
+  # Supabase's 7-day inactivity pause threshold — see incident Jun 23, 2026
   schedule:
-    - cron: "0 6 * * 2"   # Tuesdays 06:00 UTC, after weekend + Monday fixtures
+    - cron: "0 6 * * 2,5"   # Tuesdays + Fridays 06:00 UTC, after weekend + Monday fixtures
   workflow_dispatch:        # manual trigger fallback
 
 jobs:
