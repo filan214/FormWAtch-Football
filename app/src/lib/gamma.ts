@@ -13,7 +13,7 @@
 const Z90 = 1.6448536269514722; // z for the 5th/95th percentiles
 
 /** Wilson–Hilferty approximation of the Gamma(alpha, beta) p-quantile. */
-function gammaQuantile(alpha: number, beta: number, z: number): number {
+export function gammaQuantile(alpha: number, beta: number, z: number): number {
   const a = 1 / (9 * alpha);
   const t = 1 - a + z * Math.sqrt(a);
   return (alpha / beta) * t * t * t;
@@ -50,8 +50,16 @@ export function fitGammaFromCi(
   return { alpha, beta: alpha / mean };
 }
 
+/** 90% credible interval [q05, q95] of Gamma(alpha, beta). */
+export function gammaCi90(alpha: number, beta: number): [number, number] {
+  return [
+    Math.max(gammaQuantile(alpha, beta, -Z90), 0),
+    gammaQuantile(alpha, beta, Z90),
+  ];
+}
+
 /** Lanczos approximation of ln Γ(x), g = 7. */
-function logGamma(x: number): number {
+export function logGamma(x: number): number {
   const c = [
     676.5203681218851, -1259.1392167224028, 771.32342877765313,
     -176.61502916214059, 12.507343278686905, -0.13857109526572012,

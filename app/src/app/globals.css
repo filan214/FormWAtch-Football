@@ -181,11 +181,33 @@ body::after {
   animation: meter-grow 0.7s 0.15s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
+/* pipeline-flow stage blips (how-it-works) */
+@keyframes blip {
+  0%,
+  18%,
+  100% {
+    opacity: 0.25;
+  }
+  6% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .meter-grow {
     animation: none;
   }
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* native range inputs, on-theme */
+input[type="range"] {
+  accent-color: var(--primary);
+  height: 1.25rem;
 }
 
 /* tabular figures for every data surface */

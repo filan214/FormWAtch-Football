@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { AnomalyRow } from "@/components/anomaly-row";
 import { EmptyState, OfflineState } from "@/components/empty-state";
@@ -70,6 +71,12 @@ export default async function FeedPage({
           movers, Benjamini-Hochberg keeps the false positives out, and every
           surviving anomaly arrives with its statistical evidence attached.
         </p>
+        <Link
+          href="/how-it-works"
+          className="microlabel mt-4 inline-block transition-colors hover:text-primary"
+        >
+          new here? take the interactive tour →
+        </Link>
       </header>
 
       <div className="sticky top-14 z-40 -mx-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6">
