@@ -3,3 +3,7 @@
 __pycache__/
 *.pyc
 ~/soccerdata/
+
+# planning docs — kept locally, not published
+PRD-FormWatch.md
+PRD-FormWatch-Narrative-v1.1.docx
