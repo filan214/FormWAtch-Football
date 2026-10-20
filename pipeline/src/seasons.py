@@ -116,12 +116,14 @@ def refresh_squads() -> int:
     import soccerdata as sd
 
     from .db import BATCH_SIZE, sb
+    from .ingest import refresh_season_index
 
     season = current_season()
     try:
         understat = sd.Understat(leagues=LEAGUE, seasons=[season])
     except Exception as e:  # noqa: BLE001 - surface any connection failure clearly
         raise RuntimeError(f"Understat unavailable: {e}") from e
+    refresh_season_index(understat)  # cached catalog would hide a new season
 
     df = understat.read_player_season_stats().reset_index()
 
