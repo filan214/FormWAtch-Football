@@ -287,7 +287,7 @@ export default async function MethodologyPage() {
         <p className="microlabel max-w-3xl leading-relaxed">
           Stack: Understat data via soccerdata · scipy + ruptures +
           scikit-learn detectors · Supabase Postgres · weekly GitHub Actions
-          pipeline · narratives by gemini-2.5-flash via OpenRouter, validated
+          pipeline · narratives by minimax-m3.1-flash via ZenMux, validated
           against a Zod schema and cached by evidence hash · this dashboard
           is Next.js + Drizzle + Recharts.
         </p>

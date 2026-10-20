@@ -1,4 +1,4 @@
-"""AI narrative layer (guide Steps 3.1-3.2) — OpenRouter insights.
+"""AI narrative layer (guide Steps 3.1-3.2) — ZenMux insights.
 
 One structured-JSON insight per active anomaly at severity >= 60, cached in
 ``ai_insights`` keyed by a hash of the anomaly evidence: unchanged evidence
@@ -19,8 +19,9 @@ import jsonschema
 
 logger = logging.getLogger(__name__)
 
-MODEL = "google/gemini-2.5-flash"
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# ZenMux is OpenAI-compatible; ZENMUX_MODEL overrides the default model.
+DEFAULT_MODEL = "minimax/minimax-m3.1-flash"
+ZENMUX_URL = "https://zenmux.ai/api/v1/chat/completions"
 MIN_SEVERITY = 60
 FANTASY_TYPES = {"FINISHING_SLUMP", "OVERPERFORMANCE_RISK", "BREAKOUT"}
 ANOMALY_TYPES = [
@@ -74,7 +75,7 @@ def evidence_hash(evidence: dict) -> str:
 
 
 def _coerce_numbers(payload: dict) -> dict:
-    """Gemini intermittently quotes keyEvidence numbers; coerce before
+    """Models intermittently quote keyEvidence numbers; coerce before
     validating so '0.61' doesn't burn the retry."""
     for item in payload.get("keyEvidence", []):
         for k in ("baseline", "recent"):
@@ -168,20 +169,25 @@ Respond with JSON only, exactly these fields:
 Explain plain language first, technical second. Do not invent facts not in the evidence (no injury or transfer claims)."""
 
 
-def _call_openrouter(prompt: str) -> dict:
+def _model() -> str:
+    # read per call: an unset GitHub variable arrives as an empty string
+    return os.environ.get("ZENMUX_MODEL") or DEFAULT_MODEL
+
+
+def _call_llm(prompt: str) -> dict:
     r = httpx.post(
-        OPENROUTER_URL,
-        headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
+        ZENMUX_URL,
+        headers={"Authorization": f"Bearer {os.environ['ZENMUX_API_KEY']}"},
         json={
-            "model": MODEL,
+            "model": _model(),
             "messages": [
                 {"role": "system", "content": SYSTEM},
                 {"role": "user", "content": prompt},
             ],
             "response_format": {"type": "json_object"},
-            # without an explicit cap OpenRouter pre-authorizes the model's
-            # full 65k output window, which 402s on small credit balances
-            "max_tokens": 2000,
+            # reasoning tokens count against this cap: at 2000 the model's
+            # thinking left too little room and truncated the JSON mid-string
+            "max_tokens": 8000,
         },
         timeout=60,
     )
@@ -195,7 +201,7 @@ def generate_insight(player: dict, anomaly: dict, match_lines: list[dict]) -> di
     prompt = build_prompt(player, anomaly, match_lines)
     for attempt in (1, 2):
         try:
-            payload = _call_openrouter(prompt)
+            payload = _call_llm(prompt)
             validate_insight(payload, anomaly["anomaly_type"])
             return payload
         except Exception as e:  # noqa: BLE001 - any parse/validation/HTTP failure
@@ -269,7 +275,7 @@ def sync_insights(min_severity: int = MIN_SEVERITY) -> dict:
         db.upsert_insight({
             "anomaly_id": a["id"],
             "payload": payload,
-            "model": MODEL,
+            "model": _model(),
             "evidence_hash": h,
             "generated_at": datetime.now(timezone.utc).isoformat(),
         })

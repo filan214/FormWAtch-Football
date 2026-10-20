@@ -26,9 +26,9 @@ pipeline runs the detection; a Next.js dashboard serves the results.
 - Maintains a **Bayesian posterior** over each player's per-90 rate for five metrics, carried forward across seasons
 - Runs **three detectors** (Gamma-Poisson, PELT change points, Mahalanobis profiling) and types each anomaly into one of six categories
 - Gates every candidate through **Benjamini-Hochberg FDR** so the board stays honest, then scores severity 0–100
-- Generates a **structured-JSON AI narrative** (Gemini 2.5 Flash) for high-severity anomalies, cached so unchanged evidence never re-bills
+- Generates a **structured-JSON AI narrative** (MiniMax M3.1 Flash) for high-severity anomalies, cached so unchanged evidence never re-bills
 - Presents it all on a dashboard with an **interactive explainer**, **leaderboards**, **player timelines** and a full **methodology page**
-- Runs at **$0/month** on free tiers (Supabase, Vercel, GitHub Actions, OpenRouter)
+- Runs at **$0/month** on free tiers (Supabase, Vercel, GitHub Actions) plus ZenMux signup credit (~$0.001 per narrative)
 
 ---
 
@@ -63,7 +63,7 @@ flowchart LR
     A["Understat<br/>via soccerdata"] --> B["Normalize<br/>per-90 · qualifying rules"]
     B --> C["Detectors<br/>Gamma-Poisson · PELT · Mahalanobis"]
     C --> D["FDR gate<br/>+ severity scoring"]
-    D --> E["OpenRouter<br/>Gemini 2.5 Flash"]
+    D --> E["ZenMux<br/>MiniMax M3.1 Flash"]
   end
   D --> DB[("Supabase<br/>PostgreSQL")]
   E --> DB
@@ -161,7 +161,7 @@ signals; FDR `q` loosened 0.10 → 0.15 to keep slow-burn slumps alive.
 | Pipeline | Python 3.11 · pandas · scipy · ruptures · scikit-learn · soccerdata · supabase-py · httpx |
 | Scheduler | GitHub Actions cron (twice weekly + annual pre-season refresh) |
 | Database | Supabase (PostgreSQL) with Row-Level Security |
-| AI | OpenRouter → `google/gemini-2.5-flash`, structured JSON, evidence-hash cached |
+| AI | ZenMux (OpenAI-compatible) → `minimax/minimax-m3.1-flash`, structured JSON, evidence-hash cached |
 | Framework | Next.js 16 (App Router, RSC) · React 19 · TypeScript |
 | Styling | Tailwind CSS v4 · shadcn/ui |
 | Data access | Drizzle ORM · postgres-js (read-only pooler) |
@@ -189,7 +189,7 @@ formwatch/
 │   │   │   └── naive.py       # z-score control
 │   │   ├── scoring.py         # typing · FDR · severity
 │   │   ├── detect.py          # weekly detection runner
-│   │   ├── narrative.py       # OpenRouter insights + caching
+│   │   ├── narrative.py       # ZenMux insights + caching
 │   │   ├── db.py              # Supabase client
 │   │   └── main.py            # orchestrator
 │   ├── tests/                 # 92 passing tests
@@ -216,7 +216,7 @@ cd pipeline
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env        # fill SUPABASE_URL, SUPABASE_SERVICE_KEY, OPENROUTER_API_KEY
+cp .env.example .env        # fill SUPABASE_URL, SUPABASE_SERVICE_KEY, ZENMUX_API_KEY (+ optional ZENMUX_MODEL)
 python -m pipeline.src.main # full run: ingest → detect → narrate
 pytest                      # 92 tests
 ```

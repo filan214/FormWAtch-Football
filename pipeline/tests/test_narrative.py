@@ -143,7 +143,7 @@ class _Resp:
 
 
 def test_generate_recovers_on_retry(monkeypatch) -> None:
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("ZENMUX_API_KEY", "test-key")
     responses = iter(["not json at all", json.dumps(VALID_PAYLOAD)])
     calls = []
     monkeypatch.setattr(
@@ -155,7 +155,7 @@ def test_generate_recovers_on_retry(monkeypatch) -> None:
 
 
 def test_generate_gives_up_after_two_failures(monkeypatch) -> None:
-    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    monkeypatch.setenv("ZENMUX_API_KEY", "test-key")
     calls = []
     monkeypatch.setattr(
         narrative.httpx, "post",
@@ -163,3 +163,42 @@ def test_generate_gives_up_after_two_failures(monkeypatch) -> None:
     )
     assert generate_insight(PLAYER, ANOMALY, MATCH_LINES) is None
     assert len(calls) == 2
+
+
+# --- provider request ------------------------------------------------------
+
+def _capture_post(monkeypatch) -> dict:
+    sent = {}
+
+    def fake_post(url, headers, json, timeout):  # noqa: A002 - mirrors httpx
+        sent.update(url=url, headers=headers, body=json)
+        return _Resp(__import__("json").dumps(VALID_PAYLOAD))
+
+    monkeypatch.setattr(narrative.httpx, "post", fake_post)
+    return sent
+
+
+def test_request_goes_to_zenmux_with_default_model(monkeypatch) -> None:
+    monkeypatch.setenv("ZENMUX_API_KEY", "test-key")
+    monkeypatch.delenv("ZENMUX_MODEL", raising=False)
+    sent = _capture_post(monkeypatch)
+
+    generate_insight(PLAYER, ANOMALY, MATCH_LINES)
+
+    assert sent["url"] == "https://zenmux.ai/api/v1/chat/completions"
+    assert sent["headers"]["Authorization"] == "Bearer test-key"
+    assert sent["body"]["model"] == narrative.DEFAULT_MODEL
+    # reasoning tokens count against the cap; 2000 truncated real insights
+    assert sent["body"]["max_tokens"] >= 6000
+
+
+@pytest.mark.parametrize("configured", ["vendor/other-model", ""])
+def test_model_override_from_env(monkeypatch, configured: str) -> None:
+    monkeypatch.setenv("ZENMUX_API_KEY", "test-key")
+    monkeypatch.setenv("ZENMUX_MODEL", configured)
+    sent = _capture_post(monkeypatch)
+
+    generate_insight(PLAYER, ANOMALY, MATCH_LINES)
+
+    # an empty variable (unset GitHub var) falls back to the default
+    assert sent["body"]["model"] == (configured or narrative.DEFAULT_MODEL)

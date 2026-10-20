@@ -11,16 +11,22 @@ const CONFIDENCE_STYLE: Record<AnomalyInsight["confidence"], string> = {
 export function InsightNarrative({
   insight,
   anomalyType,
+  model,
 }: {
   insight: AnomalyInsight;
   anomalyType: AnomalyType;
+  model: string | null;
 }) {
   const color = TYPE_META[anomalyType].color;
+  // stored as "vendor/model"; the vendor prefix is noise on the card
+  const modelName = model?.split("/").pop();
   return (
     <article className="border-l-2 bg-card" style={{ borderLeftColor: color }}>
       <div className="px-6 py-6 sm:px-8">
         <div className="flex items-center justify-between gap-4">
-          <p className="microlabel">AI insight · gemini-2.5-flash</p>
+          <p className="microlabel">
+            AI insight{modelName ? ` · ${modelName}` : ""}
+          </p>
           <p
             className="microlabel"
             style={{ color: CONFIDENCE_STYLE[insight.confidence] }}

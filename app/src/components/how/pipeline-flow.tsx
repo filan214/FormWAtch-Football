@@ -28,7 +28,7 @@ const STAGES = [
   {
     title: "Narrate",
     label: "severity ≥ 60",
-    desc: "High-severity anomalies get a structured-JSON explanation from Gemini via OpenRouter — validated against a strict schema, cached by a hash of the evidence. Unchanged evidence never triggers a second API call.",
+    desc: "High-severity anomalies get a structured-JSON explanation from MiniMax via ZenMux — validated against a strict schema, cached by a hash of the evidence. Unchanged evidence never triggers a second API call.",
   },
   {
     title: "Publish",

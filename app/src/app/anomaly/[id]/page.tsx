@@ -57,7 +57,7 @@ export default async function AnomalyPage({
     );
   }
 
-  const { anomaly, player, insightPayload, matchLines } = detail;
+  const { anomaly, player, insightPayload, insightModel, matchLines } = detail;
   const meta = TYPE_META[anomaly.anomalyType];
   const tier = severityTier(anomaly.severity ?? 0);
   const evidence = anomaly.evidence;
@@ -187,6 +187,7 @@ export default async function AnomalyPage({
             <InsightNarrative
               insight={insight}
               anomalyType={anomaly.anomalyType}
+              model={insightModel}
             />
           ) : (
             <InsightFallback anomalyType={anomaly.anomalyType} />
